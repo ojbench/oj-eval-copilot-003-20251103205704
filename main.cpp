@@ -96,14 +96,40 @@ private:
         }
     }
     
-    void updateRankingsAfterSingleTeamChange() {
-        // Don't update stats - assume they're already updated
-        // Just re-sort and assign rankings
-        sort(teamNames.begin(), teamNames.end(), [this](const string& a, const string& b) {
-            return compareTeams(a, b);
-        });
+    void repositionTeamInRanking(const string& teamName) {
+        // Find current position of team
+        int currentPos = -1;
+        for (size_t i = 0; i < teamNames.size(); i++) {
+            if (teamNames[i] == teamName) {
+                currentPos = i;
+                break;
+            }
+        }
         
-        // Assign rankings
+        if (currentPos == -1) return;
+        
+        // Find where team should be (binary search for efficiency)
+        int newPos = currentPos;
+        while (newPos > 0 && compareTeams(teamName, teamNames[newPos - 1])) {
+            newPos--;
+        }
+        
+        if (newPos == currentPos) {
+            // No movement needed, but update ranking just in case
+            for (size_t i = 0; i < teamNames.size(); i++) {
+                teams[teamNames[i]].ranking = i + 1;
+            }
+            return;
+        }
+        
+        // Move team from currentPos to newPos
+        string temp = teamNames[currentPos];
+        for (int i = currentPos; i > newPos; i--) {
+            teamNames[i] = teamNames[i - 1];
+        }
+        teamNames[newPos] = temp;
+        
+        // Update rankings
         for (size_t i = 0; i < teamNames.size(); i++) {
             teams[teamNames[i]].ranking = i + 1;
         }
@@ -307,7 +333,7 @@ public:
                 }
             }
             
-            updateRankingsAfterSingleTeamChange();
+            repositionTeamInRanking(lowestTeam);
             int newRanking = team.ranking;
             
             if (newRanking < oldRanking && !replacedTeam.empty()) {
