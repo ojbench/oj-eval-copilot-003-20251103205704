@@ -29,16 +29,20 @@ struct Team {
     int solvedCount = 0;
     int penaltyTime = 0;
     int ranking = 0;
+    vector<int> solveTimes;  // Sorted solve times for tiebreaking
     
     void updateStats(int problemCount) {
         solvedCount = 0;
         penaltyTime = 0;
+        solveTimes.clear();
         for (char p = 'A'; p < 'A' + problemCount; p++) {
             if (problems[p].solved) {
                 solvedCount++;
                 penaltyTime += problems[p].solveTime + 20 * problems[p].wrongAttempts;
+                solveTimes.push_back(problems[p].solveTime);
             }
         }
+        sort(solveTimes.rbegin(), solveTimes.rend());
     }
 };
 
@@ -64,23 +68,11 @@ private:
             return ta.penaltyTime < tb.penaltyTime;
         }
         
-        // Compare solve times
-        vector<int> timesA, timesB;
-        for (char p = 'A'; p < 'A' + problemCount; p++) {
-            if (ta.problems[p].solved) {
-                timesA.push_back(ta.problems[p].solveTime);
-            }
-            if (tb.problems[p].solved) {
-                timesB.push_back(tb.problems[p].solveTime);
-            }
-        }
-        sort(timesA.rbegin(), timesA.rend());
-        sort(timesB.rbegin(), timesB.rend());
-        
-        int minSize = min(timesA.size(), timesB.size());
+        // Compare solve times (already sorted in descending order)
+        int minSize = min(ta.solveTimes.size(), tb.solveTimes.size());
         for (int i = 0; i < minSize; i++) {
-            if (timesA[i] != timesB[i]) {
-                return timesA[i] < timesB[i];
+            if (ta.solveTimes[i] != tb.solveTimes[i]) {
+                return ta.solveTimes[i] < tb.solveTimes[i];
             }
         }
         
@@ -256,7 +248,6 @@ public:
                 }
             }
             
-            // Save current team at the position where lowestTeam will move to
             int oldRanking = team.ranking;
             
             // Unfreeze this problem - process all frozen submissions for this problem
@@ -280,7 +271,7 @@ public:
             }
             ps.frozenSubmissions = 0;
             
-            // Before updating, find which team is at each ranking
+            // Save current rankings before update
             map<int, string> rankToTeam;
             for (const auto& name : teamNames) {
                 rankToTeam[teams[name].ranking] = name;
@@ -290,7 +281,6 @@ public:
             int newRanking = team.ranking;
             
             if (newRanking < oldRanking) {
-                // The team that was at newRanking is the replaced team
                 string replacedTeam = rankToTeam[newRanking];
                 cout << lowestTeam << " " << replacedTeam << " " 
                      << team.solvedCount << " " << team.penaltyTime << "\n";
