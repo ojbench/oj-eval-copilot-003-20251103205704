@@ -80,15 +80,31 @@ private:
     }
     
     void updateRankings() {
+        // Update stats for all teams
         for (auto& t : teams) {
             t.second.updateStats(problemCount);
         }
         
+        // Sort teams
         sort(teamNames.begin(), teamNames.end(), [this](const string& a, const string& b) {
             return compareTeams(a, b);
         });
         
-        for (int i = 0; i < teamNames.size(); i++) {
+        // Assign rankings
+        for (size_t i = 0; i < teamNames.size(); i++) {
+            teams[teamNames[i]].ranking = i + 1;
+        }
+    }
+    
+    void updateRankingsAfterSingleTeamChange() {
+        // Don't update stats - assume they're already updated
+        // Just re-sort and assign rankings
+        sort(teamNames.begin(), teamNames.end(), [this](const string& a, const string& b) {
+            return compareTeams(a, b);
+        });
+        
+        // Assign rankings
+        for (size_t i = 0; i < teamNames.size(); i++) {
             teams[teamNames[i]].ranking = i + 1;
         }
     }
@@ -291,7 +307,7 @@ public:
                 }
             }
             
-            updateRankings();
+            updateRankingsAfterSingleTeamChange();
             int newRanking = team.ranking;
             
             if (newRanking < oldRanking && !replacedTeam.empty()) {
