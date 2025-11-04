@@ -249,6 +249,8 @@ public:
             }
             
             int oldRanking = team.ranking;
+            int oldSolved = team.solvedCount;
+            int oldPenalty = team.penaltyTime;
             
             // Unfreeze this problem - process all frozen submissions for this problem
             ProblemStatus& ps = team.problems[smallestProblem];
@@ -271,17 +273,28 @@ public:
             }
             ps.frozenSubmissions = 0;
             
-            // Save current rankings before update
-            map<int, string> rankToTeam;
-            for (const auto& name : teamNames) {
-                rankToTeam[teams[name].ranking] = name;
+            // Update this team's stats
+            team.updateStats(problemCount);
+            
+            // Only do full re-ranking if stats changed
+            if (team.solvedCount == oldSolved && team.penaltyTime == oldPenalty) {
+                continue;  // No ranking change possible
+            }
+            
+            // Find the team currently at the position this team might move to
+            // We do this before re-ranking
+            string replacedTeam = "";
+            for (int i = 0; i < oldRanking - 1 && i < teamNames.size(); i++) {
+                if (compareTeams(lowestTeam, teamNames[i])) {
+                    replacedTeam = teamNames[i];
+                    break;
+                }
             }
             
             updateRankings();
             int newRanking = team.ranking;
             
-            if (newRanking < oldRanking) {
-                string replacedTeam = rankToTeam[newRanking];
+            if (newRanking < oldRanking && !replacedTeam.empty()) {
                 cout << lowestTeam << " " << replacedTeam << " " 
                      << team.solvedCount << " " << team.penaltyTime << "\n";
             }
